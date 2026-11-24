@@ -14,8 +14,9 @@ import admin from 'firebase-admin';
 const DRY = process.argv.includes('--dry');
 const sa = process.env.FIREBASE_SERVICE_ACCOUNT;
 if (!sa) {
-  console.error('FIREBASE_SERVICE_ACCOUNT 환경 변수가 없습니다. README 의 4단계를 확인하세요.');
-  process.exit(1);
+  // 아직 설정 전이면 실패로 표시하지 않고 조용히 끝냄 (10분마다 실패 메일이 오는 것 방지)
+  console.warn('FIREBASE_SERVICE_ACCOUNT 비밀 값이 아직 없어 알림을 보내지 않았습니다. README 의 4단계를 확인하세요.');
+  process.exit(0);
 }
 admin.initializeApp({ credential: admin.credential.cert(JSON.parse(sa)) });
 const db = admin.firestore();

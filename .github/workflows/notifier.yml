@@ -2,7 +2,7 @@
 # 필요한 설정 (README 4단계):
 #   Settings → Secrets and variables → Actions
 #     - Secrets  : FIREBASE_SERVICE_ACCOUNT  (서비스 계정 키 JSON 전체)
-#     - Variables: APP_URL                   (예: https://아이디.github.io/저장소이름/)
+#     - Variables: APP_URL (선택)            (기본값: https://jujuju0306.github.io/Gyeongsanhighschool/)
 name: 순찰 알림 발송
 
 on:
@@ -30,4 +30,4 @@ jobs:
       - run: node index.js
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          APP_URL: ${{ vars.APP_URL }}
+          APP_URL: ${{ vars.APP_URL || 'https://jujuju0306.github.io/Gyeongsanhighschool/' }}
