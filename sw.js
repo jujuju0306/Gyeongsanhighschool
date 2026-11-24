@@ -1,6 +1,6 @@
 // 서비스 워커: 앱 오프라인 실행 + 푸시 알림 수신
 // 앱 파일을 고친 뒤 배포할 때는 아래 버전 숫자를 올려 주세요.
-const CACHE = 'patrol-v1';
+const CACHE = 'patrol-v2';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'firebase-config.js', 'css/style.css',
   'js/app.js', 'js/ui.js', 'js/utils.js', 'js/actions.js', 'js/push.js', 'js/components.js',

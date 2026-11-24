@@ -14,6 +14,17 @@ export const DEFAULT_CONFIG = {
 
 export const DEFAULT_PREFS = { dayBefore: true, leadMin: 10 };
 
+// 순찰 종류별 "앨범 커버" 색 (단색, 같은 이름이면 항상 같은 색)
+const COVERS = ['#2d46b9', '#1e3264', '#477d95', '#8d67ab', '#27856a', '#e8115b', '#ba5d07', '#503750'];
+export function coverColor(shift) {
+  const key = shift.slotId || shift.name || '';
+  const fixed = { morning: 0, lunch: 6, after: 3 };
+  if (key in fixed) return COVERS[fixed[key]];
+  let h = 0;
+  for (const c of key) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return COVERS[h % COVERS.length];
+}
+
 export const pad = (n) => String(n).padStart(2, '0');
 export const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 export const parseYmd = (s) => {

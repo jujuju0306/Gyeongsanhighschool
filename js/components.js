@@ -1,7 +1,7 @@
 // 여러 화면에서 같이 쓰는 부품: 순찰 카드, 순찰 상세, 일정 편집, 대타 요청 등
 import { html, useState, useEffect, useApp, Icon, Avatar, Sheet, Field, useBusy } from './ui.js';
 import {
-  fmtDate, fmtShort, shiftStart, shiftEnd, telLink, smsLink, appUrl, timeAgo, byStart, todayStr,
+  fmtDate, fmtShort, shiftStart, shiftEnd, telLink, smsLink, appUrl, timeAgo, byStart, todayStr, coverColor,
 } from './utils.js';
 import * as act from './actions.js';
 
@@ -22,16 +22,16 @@ export function ShiftCard({ shift, showDate }) {
   const past = now >= shiftEnd(shift);
   return html`<button class="shift-card ${mine ? 'mine' : ''} ${past ? 'past' : ''}"
       onClick=${() => app.open(ShiftDetail, { shiftId: shift.id, initial: shift })}>
-    <div class="shift-time"><strong>${shift.start}</strong><span>${shift.end}</span></div>
+    <div class="shift-time" style=${`background:${coverColor(shift)}`}><strong>${shift.start}</strong><span>${shift.end}</span></div>
     <div class="shift-main">
       <div class="shift-title">
         ${showDate && html`<span class="date-tag">${fmtShort(shift.date)}</span>`}
         <span>${shift.name}</span>
-        ${mine && html`<span class="badge">내 순찰</span>`}
         ${live && html`<span class="badge live">진행 중</span>`}
       </div>
-      <div class="shift-meta"><${Icon} name="pin" size=${14} /> ${shift.location || '장소 미정'}</div>
-      <${MemberChips} ids=${shift.memberIds} small />
+      <div class="shift-people">${shift.location || '장소 미정'} · ${shift.memberIds.length
+        ? shift.memberIds.map((id, i) => html`${i ? ', ' : ''}<span class=${id === app.me.id ? 'me' : ''}>${app.memberById(id)?.name || '(탈퇴)'}</span>`)
+        : '담당자 없음'}</div>
     </div>
     <${Icon} name="right" cls="chev" size=${18} />
   </button>`;

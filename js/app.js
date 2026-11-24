@@ -203,7 +203,7 @@ function Main({ user, me }) {
   useEffect(() => {
     const on = (e) => {
       const o = e.detail;
-      toast(`🔔 ${o.title} — ${o.body}`, 'info');
+      toast(`${o.title} — ${o.body}`, 'info');
       if (document.hidden) showLocal(o.title, o.body, { url: o.url, tag: o.group });
     };
     addEventListener('patrol:notify', on);
@@ -223,7 +223,7 @@ function Main({ user, me }) {
         if (now >= st - prefs.leadMin * 60000 && now < st && !localStorage.getItem(key)) {
           localStorage.setItem(key, '1');
           const left = Math.max(1, Math.round((st - now) / 60000));
-          toast(`⏰ ${left}분 후 ${s.name} (${s.location}) 순찰이에요!`, 'info');
+          toast(`${left}분 후 ${s.name} (${s.location}) 순찰이에요!`, 'info');
           showLocal(`${left}분 후 순찰 시간이에요`, `${s.name} ${s.start}~${s.end} · ${s.location}`, { tag: `soon_${s.id}` });
         }
       }

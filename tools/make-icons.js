@@ -48,8 +48,7 @@ function png(size, pixel) {
   ]);
 }
 
-const mix = (c1, c2, t) => c1.map((v, i) => v + (c2[i] - v) * t);
-const DARK = [29, 78, 216], LIGHT = [56, 189, 248], BLUE = [37, 99, 235], WHITE = [255, 255, 255];
+const BLUE = [47, 111, 237], WHITE = [255, 255, 255];
 
 // 방패 모양 (cx, top, w, h 기준 정규화 좌표)
 function inShield(x, y, s) {
@@ -78,9 +77,8 @@ function roundRect(x, y, r) {
 function icon({ scale = 1, rounded = 0 }) {
   return (x, y) => {
     if (rounded && !roundRect(x, y, rounded)) return [0, 0, 0, 0];
-    const bg = mix(DARK, LIGHT, Math.min(1, Math.max(0, (x * 0.6 + y * 0.9) / 1.4)));
     if (inShield(x, y, scale)) return inCheck(x, y, scale) ? [...BLUE, 1] : [...WHITE, 1];
-    return [...bg, 1];
+    return [...BLUE, 1]; // 단색 배경 (그라데이션 없음)
   };
 }
 const badge = (x, y) => (inShield(x, y, 1.25) && !inCheck(x, y, 1.25) ? [...WHITE, 1] : [0, 0, 0, 0]);
