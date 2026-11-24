@@ -1,0 +1,21 @@
+{
+  "name": "학생부 순찰 일정",
+  "short_name": "학생부 순찰",
+  "description": "학생부 순찰 일정 확인, 순찰 알림, 대타 요청, 부원 연락",
+  "lang": "ko",
+  "start_url": "./#home",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f9ff",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "일정표", "url": "./#schedule" },
+    { "name": "대타 요청", "url": "./#swap" }
+  ]
+}

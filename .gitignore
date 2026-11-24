@@ -1,0 +1,8 @@
+node_modules/
+# Firebase 서비스 계정 키는 절대 올리지 마세요
+*service-account*.json
+*serviceAccount*.json
+*-firebase-adminsdk-*.json
+
+# 로컬 개발 도구 설정
+.claude/

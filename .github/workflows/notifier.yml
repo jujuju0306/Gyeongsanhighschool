@@ -1,0 +1,33 @@
+# 10분마다 순찰 알림과 대타·일정 변경 알림을 휴대폰으로 발송합니다.
+# 필요한 설정 (README 4단계):
+#   Settings → Secrets and variables → Actions
+#     - Secrets  : FIREBASE_SERVICE_ACCOUNT  (서비스 계정 키 JSON 전체)
+#     - Variables: APP_URL                   (예: https://아이디.github.io/저장소이름/)
+name: 순찰 알림 발송
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: notifier
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: notifier
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=dev --no-audit --no-fund
+      - run: node index.js
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          APP_URL: ${{ vars.APP_URL }}
