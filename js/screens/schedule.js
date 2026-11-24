@@ -1,12 +1,14 @@
 // 일정표: 월간 달력 / 목록 보기, 날짜별 순찰자, 관리자 일정 추가·수정·자동 생성
-import { html, useApp, useState, useEffect, Icon, Empty } from '../ui.js';
-import { ymd, addDays, todayStr, fmtDate, byStart, DOW } from '../utils.js';
+import { html, useApp, useState, useEffect, Icon, Empty, useBusy } from '../ui.js';
+import { ymd, addDays, todayStr, fmtDate, fmtShort, byStart, DOW, PATROL_START, PATROL_END, shiftEnd } from '../utils.js';
 import { ShiftCard, ShiftEditor } from '../components.js';
+import { joinShift } from '../actions.js';
 import { Generator } from './admin.js';
 
 export function Schedule() {
   const app = useApp();
   const { me } = app;
+  const [busy, run] = useBusy();
   const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [selected, setSelected] = useState(todayStr());
   const [view, setView] = useState(() => localStorage.getItem('patrol-view') || 'calendar');
@@ -54,10 +56,10 @@ export function Schedule() {
       <label class="mini-toggle"><input type="checkbox" checked=${onlyMine} onChange=${(e) => setOnlyMine(e.target.checked)} />내 순찰만</label>
     </div>
 
-    ${me.isAdmin && html`<div class="admin-bar">
-      <button class="btn ghost sm" onClick=${() => app.open(Generator, { defaultFrom: ymd(first) })}><${Icon} name="wand" size=${16} />순번 자동 생성</button>
-      <button class="btn primary sm" onClick=${() => app.open(ShiftEditor, { date: selected })}><${Icon} name="plus" size=${16} />일정 추가</button>
-    </div>`}
+    <div class="admin-bar">
+      ${me.isAdmin && html`<button class="btn ghost sm" onClick=${() => app.open(Generator, { defaultFrom: ymd(first) })}><${Icon} name="wand" size=${16} />순번 자동 생성</button>`}
+      <button class="btn primary sm" onClick=${() => app.open(ShiftEditor, { date: selected })}><${Icon} name="plus" size=${16} />순찰 추가</button>
+    </div>
 
     ${view === 'calendar' ? html`
       <div class="calendar card">
@@ -79,9 +81,17 @@ export function Schedule() {
         <div class="cal-legend"><span><i></i>순찰 있음</span><span><i class="mine"></i>내 순찰</span></div>
       </div>
       <section class="section">
-        <div class="section-head"><h3>${fmtDate(selected)}</h3><span class="muted">${selShifts.length}개</span></div>
+        <div class="section-head"><h3>${fmtDate(selected)}</h3><span class="muted">${PATROL_START}~${PATROL_END}</span></div>
         ${selShifts.length ? html`<div class="stack">${selShifts.map((s) => html`<${ShiftCard} key=${s.id} shift=${s} />`)}</div>`
           : html`<${Empty} text=${onlyMine ? '이 날은 내 순찰이 없어요' : '이 날은 순찰 일정이 없어요'} />`}
+        ${shiftEnd({ date: selected, start: PATROL_START, end: PATROL_END }) > Date.now() && (() => {
+          const day = shifts.filter((s) => s.date === selected);
+          if (!day.length) return html`<button class="btn ghost block" onClick=${() => app.open(ShiftEditor, { date: selected })}><${Icon} name="plus" size=${18} />이 날 순찰 추가하기</button>`;
+          const open = day.find((s) => !s.memberIds.includes(me.id));
+          if (open && !day.some((s) => s.memberIds.includes(me.id))) return html`<button class="btn ghost block" disabled=${busy}
+            onClick=${() => run(async () => { await joinShift(app, open); app.toast(`${fmtShort(selected)} 순찰에 참여했어요`); })}><${Icon} name="plus" size=${18} />이 날 순찰 참여하기 (${open.memberIds.length}/${app.config.slots[0].size}명)</button>`;
+          return null;
+        })()}
       </section>`
     : html`<section class="section">
         ${dayList.length ? dayList.map((d) => html`<div key=${d} class="day-group ${d === today ? 'is-today' : ''}">

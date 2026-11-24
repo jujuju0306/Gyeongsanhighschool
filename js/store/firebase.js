@@ -132,6 +132,7 @@ export async function createFirebaseStore(cfg) {
       }
     },
     deleteShift: (id) => deleteDoc(doc(db, 'shifts', id)),
+    joinShift: (id, uid) => updateDoc(doc(db, 'shifts', id), { memberIds: arrayUnion(uid), updatedAt: serverTimestamp(), updatedBy: uid }),
 
     // ---- 대타 요청 ----
     watchRequests(since, cb) {

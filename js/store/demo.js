@@ -2,7 +2,7 @@
 // Firebase 저장소(firebase.js)와 똑같은 함수 목록을 가지고 있어 화면 코드는 그대로 동작합니다.
 import { newId, ymd, addDays, applySwap, generateRotation, DEFAULT_CONFIG, DEFAULT_PREFS, byStart } from '../utils.js';
 
-const KEY = 'patrol-demo-db-v1';
+const KEY = 'patrol-demo-db-v2';
 const AUTH_KEY = 'patrol-demo-uid';
 export const DEMO_PASSWORD = '123456';
 export const DEMO_JOIN_CODE = 'demo';
@@ -200,6 +200,13 @@ export function createDemoStore() {
     },
     async deleteShifts(ids) { const set = new Set(ids); db.shifts = db.shifts.filter((s) => !set.has(s.id)); commit(); },
     async deleteShift(id) { db.shifts = db.shifts.filter((s) => s.id !== id); commit(); },
+    async joinShift(id, uid) {
+      const s = shiftById(id);
+      if (!s) throw new Error('일정을 찾을 수 없어요.');
+      if (!s.memberIds.includes(uid)) s.memberIds.push(uid);
+      Object.assign(s, { updatedAt: Date.now(), updatedBy: uid });
+      commit();
+    },
 
     // ---- 대타 요청 ----
     watchRequests(since, cb) { return watch(() => db.requests.filter((r) => r.shiftDate >= since), cb); },

@@ -1,4 +1,7 @@
-# 10분마다 순찰 알림과 대타·일정 변경 알림을 휴대폰으로 발송합니다.
+# 순찰 알림과 대타·일정 변경 알림을 휴대폰으로 발송합니다.
+#  - 10분마다: 대타 요청·일정 변경·채팅 알림, 전날 20시 알림
+#  - 매일 07:15(한국 시간)에 미리 실행 → 07:30 정각까지 기다렸다가 "지금 순찰 시간" 알림
+#    (GitHub 자동 실행은 몇 분씩 늦게 시작될 수 있어서 미리 시작해 둡니다)
 # 필요한 설정 (README 4단계):
 #   Settings → Secrets and variables → Actions
 #     - Secrets  : FIREBASE_SERVICE_ACCOUNT  (서비스 계정 키 JSON 전체)
@@ -8,16 +11,17 @@ name: 순찰 알림 발송
 on:
   schedule:
     - cron: '*/10 * * * *'
+    - cron: '15 22 * * *' # UTC 22:15 = 한국 07:15
   workflow_dispatch: {}
 
 concurrency:
-  group: notifier
+  group: notifier-${{ github.event.schedule == '15 22 * * *' && 'morning' || 'regular' }}
   cancel-in-progress: false
 
 jobs:
   notify:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: notifier
@@ -27,7 +31,7 @@ jobs:
         with:
           node-version: 20
       - run: npm install --omit=dev --no-audit --no-fund
-      - run: node index.js
+      - run: node index.js ${{ github.event.schedule == '15 22 * * *' && '--wait-until 07:30' || '' }}
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           APP_URL: ${{ vars.APP_URL || 'https://jujuju0306.github.io/Gyeongsanhighschool/' }}

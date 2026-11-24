@@ -3,7 +3,7 @@ import { html, useApp, Icon, Empty, useNow, useBusy } from '../ui.js';
 import {
   fmtDate, fmtShort, relDay, shiftStart, shiftEnd, untilText, todayStr, ymd, addDays, byStart, isIOS, isStandalone, coverColor,
 } from '../utils.js';
-import { ShiftDetail, SwapRequestSheet } from '../components.js';
+import { ShiftDetail, SwapRequestSheet, ShiftEditor } from '../components.js';
 import { pushState, enablePush } from '../push.js';
 import { InstallCard } from '../install.js';
 
@@ -103,7 +103,7 @@ export function Home() {
     </section>
 
     <section class="section">
-      <div class="section-head"><h3>내 순찰 일정</h3><button class="link" onClick=${() => app.setTab('schedule')}>모두 표시</button></div>
+      <div class="section-head"><h3>내 순찰 일정</h3><button class="link" onClick=${() => app.open(ShiftEditor, {})}>+ 순찰 추가</button></div>
       ${mine.length ? html`<div class="stack">${mine.slice(0, 6).map((s) => html`<div key=${s.id} class="my-row">
           <button class="my-row-main" onClick=${() => app.open(ShiftDetail, { shiftId: s.id, initial: s })}>
             <span class="my-date"><b>${relDay(s.date)}</b><small>${s.start}</small></span>

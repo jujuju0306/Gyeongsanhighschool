@@ -2,7 +2,7 @@
 //  학생부 순찰 알림 발송 서버
 //  - GitHub Actions 가 10분마다 이 파일을 실행합니다 (.github/workflows/notifier.yml)
 //  - 하는 일:
-//    1) 순찰 전날 알림 (기본 20시) / 순찰 시작 N분 전 알림
+//    1) 순찰 전날 알림 (기본 20시) / 순찰 시작 시각(07:30) 정각 알림
 //    2) 앱에서 쌓인 알림(outbox: 대타 요청, 일정 변경, 채팅 등)을 휴대폰 푸시로 발송
 //  - 필요한 환경 변수:
 //    FIREBASE_SERVICE_ACCOUNT : Firebase 서비스 계정 키(JSON 전체)
@@ -12,6 +12,9 @@
 import admin from 'firebase-admin';
 
 const DRY = process.argv.includes('--dry');
+// --wait-until 07:30 : 그 시각(한국 시간)까지 기다렸다가 실행 → 07:30 정각 알림
+const waitArg = process.argv.indexOf('--wait-until');
+const WAIT_UNTIL = waitArg > -1 ? process.argv[waitArg + 1] : null;
 const sa = process.env.FIREBASE_SERVICE_ACCOUNT;
 if (!sa) {
   // 아직 설정 전이면 실패로 표시하지 않고 조용히 끝냄 (10분마다 실패 메일이 오는 것 방지)
@@ -33,7 +36,18 @@ const toMin = (hm) => { const [h, m] = String(hm || '0:0').split(':').map(Number
 const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 const short = (ds) => { const d = new Date(ds + 'T00:00:00Z'); return `${d.getUTCMonth() + 1}/${d.getUTCDate()}(${DOW[d.getUTCDay()]})`; };
 
+async function waitUntilKst(hm) {
+  const k = kst();
+  const target = toMin(hm);
+  const ms = (target - k.minutes) * 60000 - new Date().getUTCSeconds() * 1000;
+  if (ms > 0 && ms < 40 * 60000) {
+    console.log(`한국 시간 ${hm} 까지 ${Math.round(ms / 1000)}초 기다립니다...`);
+    await new Promise((r) => setTimeout(r, ms));
+  }
+}
+
 async function main() {
+  if (WAIT_UNTIL) await waitUntilKst(WAIT_UNTIL);
   const [membersSnap, cfgSnap, outSnap] = await Promise.all([
     db.collection('members').get(),
     db.doc('config/app').get(),
@@ -72,15 +86,15 @@ async function main() {
     for (const uid of s.memberIds || []) {
       const m = members.get(uid);
       if (!m) continue;
-      const prefs = { dayBefore: true, leadMin: 10, ...(m.prefs || {}) };
+      const prefs = { dayBefore: true, atStart: true, ...(m.prefs || {}) };
       if (s.date === k.tomorrow && prefs.dayBefore && k.minutes >= dayHour * 60 && !done[`${uid}_day`]) {
         add(uid, { title: '내일 순찰이 있어요', body: `${short(s.date)} ${s.start} ${s.name} · ${s.location || ''}`, url: '#home', group: `day_${d.id}`, tag: `day_${d.id}` });
         patch[`reminded.${uid}_day`] = true;
       }
-      if (s.date === k.today && prefs.leadMin >= 0 && k.minutes >= start - prefs.leadMin && k.minutes < end && !done[`${uid}_soon`]) {
-        const left = start - k.minutes;
+      // 순찰 시작 시각(07:30) 정각 알림
+      if (s.date === k.today && prefs.atStart !== false && k.minutes >= start && k.minutes < end && !done[`${uid}_soon`]) {
         add(uid, {
-          title: left > 0 ? `${left}분 후 순찰 시간이에요` : '지금 순찰 시간이에요',
+          title: '지금 순찰 시간이에요',
           body: `${s.name} ${s.start}~${s.end} · ${s.location || ''}`, url: '#home', group: `soon_${d.id}`, tag: `soon_${d.id}`,
         });
         patch[`reminded.${uid}_soon`] = true;

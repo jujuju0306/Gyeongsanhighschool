@@ -1,7 +1,7 @@
 // 앱 본체: 로그인 → 메인 화면(하단 탭) 전환, 실시간 데이터 구독, 알림 처리
 import { html, render, useState, useEffect, useMemo, useCallback, AppCtx, Icon, Field } from './ui.js';
 import { getStore } from './store/index.js';
-import { DEFAULT_CONFIG, DEFAULT_PREFS, todayStr, ymd, addDays, shiftStart } from './utils.js';
+import { DEFAULT_CONFIG, DEFAULT_PREFS, normalizeConfig, todayStr, ymd, addDays, shiftStart } from './utils.js';
 import { enablePush, showLocal, pushState } from './push.js';
 import { Home } from './screens/home.js';
 import { Schedule } from './screens/schedule.js';
@@ -153,7 +153,7 @@ function Main({ user, me }) {
   const today = todayStr();
 
   useEffect(() => store.watchMembers(setMembers), []);
-  useEffect(() => store.watchConfig((c) => setConfig({ ...DEFAULT_CONFIG, ...(c || {}) })), []);
+  useEffect(() => store.watchConfig((c) => setConfig(normalizeConfig(c))), []);
   useEffect(() => store.watchShifts(today, ymd(addDays(new Date(), 60)), setUpcoming), [today]);
   useEffect(() => store.watchRequests(ymd(addDays(new Date(), -30)), setRequests), []);
 
@@ -212,26 +212,25 @@ function Main({ user, me }) {
     return () => removeEventListener('patrol:notify', on);
   }, []);
 
-  // 앱이 열려 있는 동안 순찰 시작 전 알림 (서버 알림이 늦을 때 대비)
+  // 앱이 열려 있는 동안 07:30 정각 순찰 알림 (서버 알림과 같은 tag 라 중복 표시되지 않음)
   useEffect(() => {
     const check = () => {
       const prefs = { ...DEFAULT_PREFS, ...(me.prefs || {}) };
-      if (prefs.leadMin < 0) return;
+      if (prefs.atStart === false) return;
       const now = Date.now();
       for (const s of upcoming) {
         if (!s.memberIds.includes(me.id)) continue;
         const st = shiftStart(s).getTime();
         const key = `patrol-local-${s.id}-${s.date}-${s.start}`;
-        if (now >= st - prefs.leadMin * 60000 && now < st && !localStorage.getItem(key)) {
+        if (now >= st && now < st + 10 * 60000 && !localStorage.getItem(key)) {
           localStorage.setItem(key, '1');
-          const left = Math.max(1, Math.round((st - now) / 60000));
-          toast(`${left}분 후 ${s.name} (${s.location}) 순찰이에요!`, 'info');
-          showLocal(`${left}분 후 순찰 시간이에요`, `${s.name} ${s.start}~${s.end} · ${s.location}`, { tag: `soon_${s.id}` });
+          toast(`지금 ${s.name} 시간이에요 (${s.location})`, 'info');
+          showLocal('지금 순찰 시간이에요', `${s.name} ${s.start}~${s.end} · ${s.location}`, { tag: `soon_${s.id}` });
         }
       }
     };
     check();
-    const t = setInterval(check, 30000);
+    const t = setInterval(check, 15000);
     return () => clearInterval(t);
   }, [upcoming, me]);
 

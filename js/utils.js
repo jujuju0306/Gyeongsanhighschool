@@ -2,17 +2,27 @@
 
 export const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 
+// 순찰 시간은 고정: 아침 7시 30분 ~ 8시 10분 (알림도 7시 30분 정각)
+export const PATROL_START = '07:30';
+export const PATROL_END = '08:10';
+
 export const DEFAULT_CONFIG = {
-  schoolName: '우리 학교 학생부',
+  schoolName: '경산고 학생부',
   dayBeforeHour: 20, // 전날 알림 시각 (0~23시)
   slots: [
-    { id: 'morning', name: '등교 순찰', start: '07:50', end: '08:20', location: '정문', size: 2 },
-    { id: 'lunch', name: '점심 순찰', start: '12:40', end: '13:10', location: '본관 복도', size: 2 },
-    { id: 'after', name: '하교 순찰', start: '16:30', end: '16:50', location: '후문', size: 2 },
+    { id: 'morning', name: '아침 순찰', start: PATROL_START, end: PATROL_END, location: '정문', size: 2 },
   ],
 };
 
-export const DEFAULT_PREFS = { dayBefore: true, leadMin: 10 };
+// 저장된 설정이 있어도 순찰 시간은 항상 고정값으로
+export const normalizeConfig = (c) => {
+  const cfg = { ...DEFAULT_CONFIG, ...(c || {}) };
+  const first = (cfg.slots && cfg.slots[0]) || DEFAULT_CONFIG.slots[0];
+  cfg.slots = [{ ...DEFAULT_CONFIG.slots[0], ...first, id: 'morning', start: PATROL_START, end: PATROL_END }];
+  return cfg;
+};
+
+export const DEFAULT_PREFS = { dayBefore: true, atStart: true };
 
 // 순찰 종류별 "앨범 커버" 색 (단색, 같은 이름이면 항상 같은 색)
 const COVERS = ['#2d46b9', '#1e3264', '#477d95', '#8d67ab', '#27856a', '#e8115b', '#ba5d07', '#503750'];
@@ -185,7 +195,8 @@ export function toCsv(rows) {
 }
 
 // 휴대폰 기본 캘린더에 넣을 수 있는 .ics (캘린더 자체 알람 포함)
-export function buildIcs(shifts, { leadMin = 10, dayBefore = true } = {}) {
+export function buildIcs(shifts, { atStart = true, dayBefore = true } = {}) {
+  const leadMin = atStart === false ? -1 : 0; // 순찰 시작 시각(07:30) 정각 알람
   const t = (dateStr, hm) => dateStr.replace(/-/g, '') + 'T' + String(hm || '00:00').replace(':', '') + '00';
   const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
   const esc = (s) => String(s || '').replace(/[\\;,]/g, (m) => '\\' + m).replace(/\n/g, '\\n');
@@ -196,7 +207,7 @@ export function buildIcs(shifts, { leadMin = 10, dayBefore = true } = {}) {
       `DTSTART:${t(s.date, s.start)}`, `DTEND:${t(s.date, s.end || s.start)}`,
       `SUMMARY:${esc('[순찰] ' + s.name)}`, `LOCATION:${esc(s.location)}`,
     );
-    if (leadMin >= 0) lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${esc(s.name + ' 순찰 시간')}`, `TRIGGER:-PT${leadMin}M`, 'END:VALARM');
+    if (leadMin >= 0) lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${esc(s.name + ' 순찰 시간')}`, leadMin ? `TRIGGER:-PT${leadMin}M` : 'TRIGGER:PT0M', 'END:VALARM');
     if (dayBefore) lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${esc('내일 ' + s.name)}`, 'TRIGGER:-PT12H', 'END:VALARM');
     lines.push('END:VEVENT');
   }

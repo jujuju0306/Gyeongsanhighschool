@@ -1,7 +1,7 @@
 // 관리자 기능: 순번 자동 생성, 순찰 시간대 설정, 부원 관리, 가입 코드, 변경 기록, 백업
 import { html, useApp, useState, useEffect, Icon, Avatar, Sheet, Field, Empty, useBusy } from '../ui.js';
 import {
-  ymd, addDays, parseYmd, todayStr, fmtShort, generateRotation, parseDateList, DOW, newId, timeAgo, download, toCsv, byStart,
+  ymd, addDays, parseYmd, todayStr, fmtShort, generateRotation, parseDateList, DOW, timeAgo, download, toCsv, byStart, PATROL_START, PATROL_END,
 } from '../utils.js';
 
 // ---------- 순번(로테이션) 자동 생성 ----------
@@ -67,7 +67,7 @@ export function Generator({ defaultFrom, onClose }) {
       </div>
       <div class="field"><span class="field-label">시간대</span>
         <div class="pick-grid">${slots.map((s) => html`<button type="button" class="pick ${slotIds.includes(s.id) ? 'on' : ''}" onClick=${() => toggleIn(slotIds, setSlotIds, s.id)}>${s.name} ${s.start} · ${s.size}명</button>`)}</div>
-        <span class="field-hint">시간대·인원은 더보기 → 순찰 시간대 설정에서 바꿀 수 있어요.</span>
+        <span class="field-hint">시간은 ${PATROL_START}~${PATROL_END} 고정이에요. 장소·인원은 더보기 → 순찰 기본 설정에서 바꿀 수 있어요.</span>
       </div>
       <${Field} label="제외할 날짜 (공휴일·시험·방학 등)" hint="예: 2026-12-25, 2026-12-31 (쉼표 또는 줄바꿈으로 구분)">
         <textarea rows="2" value=${skip} onInput=${(e) => setSkip(e.target.value)} placeholder="2026-12-25"></textarea>
@@ -97,42 +97,35 @@ export function Generator({ defaultFrom, onClose }) {
 // ---------- 순찰 시간대 설정 ----------
 export function SlotsEditor({ onClose }) {
   const app = useApp();
-  const [slots, setSlots] = useState(() => (app.config.slots || []).map((s) => ({ ...s })));
+  const slot = app.config.slots[0];
+  const [f, setF] = useState({ name: slot.name, location: slot.location || '', size: slot.size || 2 });
   const [school, setSchool] = useState(app.config.schoolName || '');
   const [hour, setHour] = useState(app.config.dayBeforeHour ?? 20);
   const [busy, run] = useBusy();
-  const upd = (i, k, v) => setSlots(slots.map((s, j) => (j === i ? { ...s, [k]: v } : s)));
-  const add = () => setSlots([...slots, { id: newId(), name: '새 순찰', start: '12:00', end: '12:30', location: '', size: 2 }]);
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const save = () => run(async () => {
-    if (slots.some((s) => !s.name.trim() || !s.start || !s.end)) throw new Error('모든 시간대에 이름과 시간을 입력해 주세요.');
+    if (!f.name.trim()) throw new Error('순찰 이름을 입력해 주세요.');
     await app.store.saveConfig({
       schoolName: school.trim() || '학생부', dayBeforeHour: Number(hour),
-      slots: slots.map((s) => ({ ...s, name: s.name.trim(), size: Math.max(1, Number(s.size) || 1) })),
+      slots: [{ id: 'morning', name: f.name.trim(), location: f.location.trim(), size: Math.max(1, Number(f.size) || 1), start: PATROL_START, end: PATROL_END }],
     });
-    await app.store.log({ by: app.me.id, byName: app.me.name, action: 'config', summary: '순찰 시간대/기본 설정 변경' });
+    await app.store.log({ by: app.me.id, byName: app.me.name, action: 'config', summary: '순찰 기본 설정 변경' });
     app.toast('설정을 저장했어요');
     onClose();
   });
-  return html`<${Sheet} title="순찰 시간대 설정" onClose=${onClose} full
+  return html`<${Sheet} title="순찰 기본 설정" onClose=${onClose}
     footer=${html`<button class="btn ghost" onClick=${onClose}>취소</button><button class="btn primary grow" onClick=${save} disabled=${busy}>저장</button>`}>
     <div class="form">
+      <div class="info-box"><${Icon} name="clock" size=${18} /><div><b>순찰 시간 ${PATROL_START} ~ ${PATROL_END} (고정)</b><span>알림도 매일 ${PATROL_START} 정각에 가요</span></div></div>
       <${Field} label="학교 / 단체 이름"><input value=${school} onInput=${(e) => setSchool(e.target.value)} /></${Field}>
-      <${Field} label="전날 알림 시각" hint="순찰 전날 이 시각에 '내일 순찰' 알림이 가요.">
-        <select value=${hour} onChange=${(e) => setHour(e.target.value)}>${[17, 18, 19, 20, 21, 22].map((h) => html`<option value=${h}>${h}시</option>`)}</select>
-      </${Field}>
-      ${slots.map((s, i) => html`<div key=${s.id} class="slot-card">
-        <div class="row2">
-          <${Field} label="이름"><input value=${s.name} onInput=${(e) => upd(i, 'name', e.target.value)} /></${Field}>
-          <${Field} label="장소"><input value=${s.location} onInput=${(e) => upd(i, 'location', e.target.value)} /></${Field}>
-        </div>
-        <div class="row3">
-          <${Field} label="시작"><input type="time" value=${s.start} onInput=${(e) => upd(i, 'start', e.target.value)} /></${Field}>
-          <${Field} label="종료"><input type="time" value=${s.end} onInput=${(e) => upd(i, 'end', e.target.value)} /></${Field}>
-          <${Field} label="인원"><input type="number" min="1" max="10" value=${s.size} onInput=${(e) => upd(i, 'size', e.target.value)} /></${Field}>
-        </div>
-        <button type="button" class="link danger" onClick=${() => setSlots(slots.filter((_, j) => j !== i))}><${Icon} name="trash" size=${15} />이 시간대 삭제</button>
-      </div>`)}
-      <button type="button" class="btn soft block" onClick=${add}><${Icon} name="plus" size=${18} />시간대 추가</button>
+      <div class="row2">
+        <${Field} label="순찰 이름"><input value=${f.name} onInput=${set('name')} /></${Field}>
+        <${Field} label="기본 장소"><input value=${f.location} onInput=${set('location')} placeholder="예: 정문" /></${Field}>
+      </div>
+      <div class="row2">
+        <${Field} label="하루 인원"><input type="number" min="1" max="10" value=${f.size} onInput=${set('size')} /></${Field}>
+        <${Field} label="전날 알림 시각"><select value=${hour} onChange=${(e) => setHour(e.target.value)}>${[17, 18, 19, 20, 21, 22].map((h) => html`<option value=${h}>${h}시</option>`)}</select></${Field}>
+      </div>
     </div>
   </${Sheet}>`;
 }

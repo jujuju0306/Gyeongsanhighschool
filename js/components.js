@@ -2,6 +2,7 @@
 import { html, useState, useEffect, useApp, Icon, Avatar, Sheet, Field, useBusy } from './ui.js';
 import {
   fmtDate, fmtShort, shiftStart, shiftEnd, telLink, smsLink, appUrl, timeAgo, byStart, todayStr, coverColor,
+  PATROL_START, PATROL_END,
 } from './utils.js';
 import * as act from './actions.js';
 
@@ -71,7 +72,7 @@ export function ShiftDetail({ shiftId, initial, onClose }) {
   const mine = shift.memberIds.includes(app.me.id);
   const future = shiftEnd(shift) > Date.now();
   const pending = app.requests.filter((r) => r.shiftId === shift.id && r.status === 'pending');
-  const isAdmin = app.me.isAdmin;
+  const canManage = canManageShift(app, shift);
 
   const remove = () => run(async () => {
     if (!confirm(`${fmtShort(shift.date)} ${shift.name} 일정을 삭제할까요?\n담당자에게 취소 알림이 갑니다.`)) return;
@@ -79,11 +80,16 @@ export function ShiftDetail({ shiftId, initial, onClose }) {
     app.toast('일정을 삭제했어요');
     onClose();
   });
+  const join = () => run(async () => {
+    await act.joinShift(app, shift);
+    app.toast(`${fmtShort(shift.date)} 순찰에 참여했어요`);
+  });
 
-  const footer = (mine && future) || isAdmin
-    ? html`${isAdmin && html`<button class="btn ghost" onClick=${remove} disabled=${busy}><${Icon} name="trash" size=${18} />삭제</button>
-        <button class="btn soft" onClick=${() => app.open(ShiftEditor, { shift })}><${Icon} name="edit" size=${18} />수정</button>`}
-      ${mine && future && html`<button class="btn primary grow" onClick=${() => app.open(SwapRequestSheet, { shift })}><${Icon} name="swap" size=${18} />대타 요청</button>`}`
+  const footer = (future || canManage)
+    ? html`${canManage && html`<button class="btn ghost" onClick=${remove} disabled=${busy}><${Icon} name="trash" size=${18} />삭제</button>
+        <button class="btn ghost" onClick=${() => app.open(ShiftEditor, { shift })}><${Icon} name="edit" size=${18} />수정</button>`}
+      ${future && mine && html`<button class="btn primary grow" onClick=${() => app.open(SwapRequestSheet, { shift })}><${Icon} name="swap" size=${18} />대타 요청</button>`}
+      ${future && !mine && html`<button class="btn primary grow" onClick=${join} disabled=${busy}><${Icon} name="plus" size=${18} />참여하기</button>`}`
     : null;
 
   return html`<${Sheet} title="순찰 상세" onClose=${onClose} footer=${footer}>
@@ -103,54 +109,54 @@ export function ShiftDetail({ shiftId, initial, onClose }) {
   </${Sheet}>`;
 }
 
+// 관리자이거나, 직접 추가한 순찰이면 수정·삭제 가능
+export const canManageShift = (app, shift) => app.me.isAdmin || (shift.createdBy && shift.createdBy === app.me.id);
+
 export function ShiftEditor({ shift, date, onClose }) {
   const app = useApp();
-  const slots = app.config.slots || [];
+  const { me } = app;
+  const slot = app.config.slots[0];
   const isNew = !shift;
-  const first = slots[0] || { id: '', name: '', start: '08:00', end: '08:30', location: '', size: 2 };
+  const isAdmin = me.isAdmin;
   const [f, setF] = useState(() => shift
-    ? { ...shift, memberIds: [...shift.memberIds] }
-    : { date: date || todayStr(), slotId: first.id, name: first.name, start: first.start, end: first.end, location: first.location, memberIds: [], note: '' });
+    ? { date: shift.date, location: shift.location || '', memberIds: [...shift.memberIds], note: shift.note || '' }
+    : { date: date && date >= todayStr() ? date : todayStr(), location: slot.location || '', memberIds: isAdmin ? [] : [me.id], note: '' });
   const [busy, run] = useBusy();
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
-  const pickSlot = (e) => {
-    const s = slots.find((x) => x.id === e.target.value);
-    setF(s ? { ...f, slotId: s.id, name: s.name, start: s.start, end: s.end, location: s.location } : { ...f, slotId: '' });
+  const locked = (id) => !isAdmin && id === me.id; // 일반 부원은 자기 자신을 뺄 수 없음
+  const toggle = (id) => {
+    if (locked(id)) return app.toast('본인은 빠질 수 없어요. 빠지려면 대타 요청을 이용해 주세요.', 'error');
+    setF({ ...f, memberIds: f.memberIds.includes(id) ? f.memberIds.filter((x) => x !== id) : [...f.memberIds, id] });
   };
-  const toggle = (id) => setF({ ...f, memberIds: f.memberIds.includes(id) ? f.memberIds.filter((x) => x !== id) : [...f.memberIds, id] });
-  const active = app.members.filter((m) => m.active !== false).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+  const active = app.members.filter((m) => m.active !== false).sort((a, b) => (b.id === me.id) - (a.id === me.id) || a.name.localeCompare(b.name, 'ko'));
 
   const save = () => run(async () => {
-    if (!f.date || !f.name.trim() || !f.start || !f.end) throw new Error('날짜, 이름, 시간을 입력해 주세요.');
-    if (f.end < f.start) throw new Error('끝나는 시간이 시작 시간보다 빨라요.');
-    const { id, date, slotId, name, start, end, location, memberIds, note } = f;
-    await act.saveShift(app, shift || null, { id, date, slotId: slotId || '', name: name.trim(), start, end, location: location.trim(), memberIds, note: note.trim() });
-    app.toast(isNew ? '일정을 추가했어요' : '일정을 수정했어요. 담당자에게 알림이 가요');
+    if (!f.date) throw new Error('날짜를 골라 주세요.');
+    if (!isAdmin && f.date < todayStr()) throw new Error('지난 날짜에는 추가할 수 없어요.');
+    if (!f.memberIds.length) throw new Error('담당자를 한 명 이상 골라 주세요.');
+    const same = (await app.store.getShifts(f.date, f.date)).filter((s) => s.id !== shift?.id);
+    if (same.length) throw new Error(`${fmtShort(f.date)}에는 이미 순찰이 있어요. 그 순찰을 눌러 [참여하기]를 해 주세요.`);
+    await act.saveShift(app, shift || null, {
+      id: shift?.id, date: f.date, slotId: 'morning', name: shift?.name || slot.name,
+      start: PATROL_START, end: PATROL_END, location: f.location.trim(), memberIds: f.memberIds, note: f.note.trim(),
+    });
+    app.toast(isNew ? `${fmtShort(f.date)} 순찰을 추가했어요` : '일정을 수정했어요. 담당자에게 알림이 가요');
     onClose();
   });
 
-  return html`<${Sheet} title=${isNew ? '순찰 일정 추가' : '순찰 일정 수정'} onClose=${onClose}
+  return html`<${Sheet} title=${isNew ? '순찰 추가' : '순찰 수정'} onClose=${onClose}
     footer=${html`<button class="btn ghost" onClick=${onClose}>취소</button><button class="btn primary grow" onClick=${save} disabled=${busy}>저장</button>`}>
     <div class="form">
+      <div class="info-box"><${Icon} name="clock" size=${18} /><div><b>${slot.name} ${PATROL_START} ~ ${PATROL_END}</b><span>시간은 고정이에요 · 알림은 ${PATROL_START} 정각</span></div></div>
       <div class="row2">
-        <${Field} label="날짜"><input type="date" value=${f.date} onInput=${set('date')} /></${Field}>
-        <${Field} label="시간대">
-          <select value=${f.slotId || ''} onChange=${pickSlot}>
-            ${slots.map((s) => html`<option value=${s.id}>${s.name}</option>`)}
-            <option value="">직접 입력</option>
-          </select>
-        </${Field}>
+        <${Field} label="날짜"><input type="date" value=${f.date} min=${isAdmin ? undefined : todayStr()} onInput=${set('date')} /></${Field}>
+        <${Field} label="장소"><input value=${f.location} onInput=${set('location')} placeholder="예: 정문" /></${Field}>
       </div>
-      <${Field} label="순찰 이름"><input value=${f.name} onInput=${set('name')} placeholder="예: 등교 순찰" /></${Field}>
-      <div class="row2">
-        <${Field} label="시작"><input type="time" value=${f.start} onInput=${set('start')} /></${Field}>
-        <${Field} label="종료"><input type="time" value=${f.end} onInput=${set('end')} /></${Field}>
-      </div>
-      <${Field} label="장소"><input value=${f.location} onInput=${set('location')} placeholder="예: 정문" /></${Field}>
-      <div class="field"><span class="field-label">담당자 (${f.memberIds.length}명 선택)</span>
+      <div class="field"><span class="field-label">함께할 사람 (${f.memberIds.length}명 · 권장 ${slot.size}명)</span>
         <div class="pick-grid">${active.map((m) => html`<button key=${m.id} type="button"
           class="pick ${f.memberIds.includes(m.id) ? 'on' : ''}" onClick=${() => toggle(m.id)}>
-          ${f.memberIds.includes(m.id) && html`<${Icon} name="check" size=${14} />`}${m.name}</button>`)}</div>
+          ${f.memberIds.includes(m.id) && html`<${Icon} name="check" size=${14} />`}${m.id === me.id ? `${m.name} (나)` : m.name}</button>`)}</div>
+        ${!isAdmin && html`<span class="field-hint">다른 사람을 넣으면 그 사람에게 배정 알림이 가요.</span>`}
       </div>
       <${Field} label="메모 (선택)"><textarea rows="2" value=${f.note} onInput=${set('note')} placeholder="예: 우천 시 본관 1층"></textarea></${Field}>
     </div>

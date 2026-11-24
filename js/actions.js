@@ -9,6 +9,8 @@ export async function saveShift(app, before, after) {
   const n = (id) => app.memberById(id)?.name || '?';
   const others = (ids) => ids.filter((x) => x !== me.id);
   const data = { ...after, updatedBy: me.id };
+  if (!before) data.createdBy = me.id;
+  else delete data.createdBy;
   const timeChanged = before && ['date', 'start', 'end', 'location', 'name'].some((k) => before[k] !== after[k]);
   if (timeChanged) data.reminded = {};
   const id = await store.saveShift(data);
@@ -45,6 +47,18 @@ export async function saveShift(app, before, after) {
   if (!parts.length && before.note !== after.note) parts.push('메모 수정');
   if (parts.length) await store.log({ by: me.id, byName: me.name, action: 'update', summary: `${label(after)} 수정 · ${parts.join(' / ')}` });
   return id;
+}
+
+// 이미 있는 순찰에 스스로 참여
+export async function joinShift(app, shift) {
+  const { store, me } = app;
+  if (shift.memberIds.includes(me.id)) throw new Error('이미 이 순찰 담당이에요.');
+  await store.joinShift(shift.id, me.id);
+  const others = shift.memberIds.filter((x) => x !== me.id);
+  if (others.length) await store.notify(others, {
+    title: '순찰 참여 알림', body: `${me.name}님이 ${label(shift)} 순찰에 함께해요.`, url: '#schedule', fromUid: me.id, group: `assign_${shift.id}`,
+  });
+  await store.log({ by: me.id, byName: me.name, action: 'join', summary: `${me.name} → ${label(shift)} 순찰 참여` });
 }
 
 export async function deleteShift(app, shift) {

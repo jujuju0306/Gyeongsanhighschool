@@ -1,6 +1,6 @@
 // 더보기: 내 정보, 알림 설정, 캘린더 내보내기, 앱 설치 안내, 관리자 메뉴
 import { html, useApp, useState, Icon, Avatar, Sheet, Field, Toggle, useBusy } from '../ui.js';
-import { DEFAULT_PREFS, buildIcs, download, shiftEnd, byStart, isIOS, isStandalone } from '../utils.js';
+import { DEFAULT_PREFS, PATROL_START, buildIcs, download, shiftEnd, byStart, isIOS, isStandalone } from '../utils.js';
 import { pushState, enablePush, showLocal } from '../push.js';
 import { Generator, SlotsEditor, MembersAdmin, JoinCodeSheet, HistorySheet, BackupSheet } from './admin.js';
 import { InviteSheet, InstallCard } from '../install.js';
@@ -49,11 +49,8 @@ export function More() {
           : st === 'default' ? html`<button class="btn primary sm" onClick=${turnOnPush} disabled=${busy}>켜기</button>` : null}
       </div>
       <${Toggle} label="전날 알림" desc=${`순찰 전날 ${app.config.dayBeforeHour ?? 20}시에 '내일 순찰' 알림`} checked=${prefs.dayBefore} onChange=${(v) => setPref('dayBefore', v)} />
-      <label class="toggle-row"><span><span class="toggle-label">시작 전 알림</span><span class="toggle-desc">순찰 시작 몇 분 전에 알릴까요?</span></span>
-        <select class="mini-select" value=${prefs.leadMin} onChange=${(e) => setPref('leadMin', Number(e.target.value))}>
-          ${[[-1, '끄기'], [5, '5분 전'], [10, '10분 전'], [15, '15분 전'], [30, '30분 전'], [60, '1시간 전']].map(([v, t]) => html`<option value=${v}>${t}</option>`)}
-        </select></label>
-      <${MenuRow} icon="calendar" title="내 순찰을 휴대폰 캘린더에 추가" desc="캘린더 앱 자체 알람으로 한 번 더 챙길 수 있어요 (.ics)" onClick=${exportIcs} />
+      <${Toggle} label=${`순찰 시각 알림 (${PATROL_START})`} desc=${`순찰 날 아침 ${PATROL_START} 정각에 알림`} checked=${prefs.atStart !== false} onChange=${(v) => setPref('atStart', v)} />
+      <${MenuRow} icon="calendar" title="내 순찰을 휴대폰 캘린더에 추가" desc=${`캘린더 앱이 ${PATROL_START} 정각에 한 번 더 알려줘요 (.ics)`} onClick=${exportIcs} />
     </div>
 
     <h4 class="sub-title">앱</h4>
@@ -67,7 +64,7 @@ export function More() {
     ${me.isAdmin && html`<h4 class="sub-title">관리자</h4>
     <div class="card list">
       <${MenuRow} icon="wand" title="순번 자동 생성" desc="기간·요일을 정하면 순찰표를 자동으로 만들어요" onClick=${() => app.open(Generator, {})} />
-      <${MenuRow} icon="sliders" title="순찰 시간대 설정" desc="등교·점심·하교 등 시간·장소·인원" onClick=${() => app.open(SlotsEditor, {})} />
+      <${MenuRow} icon="sliders" title="순찰 기본 설정" desc="학교 이름 · 장소 · 하루 인원" onClick=${() => app.open(SlotsEditor, {})} />
       <${MenuRow} icon="users" title="부원 관리" desc="관리자 지정, 비활성화" onClick=${() => app.open(MembersAdmin, {})} />
       <${MenuRow} icon="key" title="가입 코드" desc="임원만 가입할 수 있게 하는 코드" onClick=${() => app.open(JoinCodeSheet, {})} />
       <${MenuRow} icon="download" title="데이터 백업" desc="순찰표 엑셀(CSV) / 전체 백업" onClick=${() => app.open(BackupSheet, {})} />
