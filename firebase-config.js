@@ -6,17 +6,14 @@
 // ===============================================================
 
 // 1) Firebase 콘솔 → 프로젝트 설정(톱니바퀴) → 일반 → 내 앱(웹 </>) → "SDK 설정 및 구성"의 firebaseConfig 를 그대로 붙여넣기
-self.FIREBASE_CONFIG = null;
-/* 예시:
 self.FIREBASE_CONFIG = {
-  apiKey: "AIza...",
-  authDomain: "my-patrol.firebaseapp.com",
-  projectId: "my-patrol",
-  storageBucket: "my-patrol.appspot.com",
-  messagingSenderId: "1234567890",
-  appId: "1:1234567890:web:abcdef"
+  apiKey: "AIzaSyB1Aa4fPPKzl09o0gT59IhhYFZkAlRd7YY",
+  authDomain: "gyeongsanhighschool-2b500.firebaseapp.com",
+  projectId: "gyeongsanhighschool-2b500",
+  storageBucket: "gyeongsanhighschool-2b500.firebasestorage.app",
+  messagingSenderId: "1010124884924",
+  appId: "1:1010124884924:web:63b9dac539514c1affb9b9",
 };
-*/
 
 // 2) Firebase 콘솔 → 프로젝트 설정 → 클라우드 메시징 → 웹 구성 → "웹 푸시 인증서" 키 쌍 (BL... 로 시작하는 긴 문자열)
-self.FIREBASE_VAPID_KEY = "";
+self.FIREBASE_VAPID_KEY = "BBXEeghnbIeq61LO_1DEcmJSY4gLxmVppH36eNhM_0loCoHlgniIrrConmmOXxjBNHSyT0vp3IqpsvB371h9MFQ";
