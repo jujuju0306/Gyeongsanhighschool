@@ -376,6 +376,27 @@ button.menu-row:hover { background: var(--hover); }
 .install-card ol b { color: var(--text); }
 .install-card .hint { margin-top: 8px; }
 
+/* ---------- 설치 안내 / 초대 ---------- */
+.install { background: var(--surface-2); border-radius: var(--r); padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.install.row { flex-direction: row; align-items: center; gap: 14px; }
+.install.row > span { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.install.row small { font-size: 12.5px; color: var(--text-2); }
+.install-head { display: flex; align-items: center; gap: 12px; }
+.install-head img { border-radius: var(--r-sm); }
+.install-head > span { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.install-head small { font-size: 12.5px; color: var(--text-2); }
+.install p { font-size: 13.5px; color: var(--text-2); }
+.install-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.install-steps-inline { list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.install-steps-inline li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.step-n { width: 22px; height: 22px; border-radius: 50%; background: var(--text); color: #000; font-size: 12px; font-weight: 800; display: grid; place-items: center; flex-shrink: 0; }
+.key { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; background: var(--elevated); font-weight: 700; font-size: 13px; }
+.install .qr { border-radius: var(--r-sm); background: #fff; flex-shrink: 0; }
+.invite-qr { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); }
+.invite-qr img { width: 220px; height: 220px; border-radius: var(--r); background: #fff; }
+.invite-url { background: #303030; border-radius: var(--r-sm); padding: 10px 12px; font-size: 13px; color: var(--text-2); word-break: break-all; text-align: center; }
+.invite-url b { color: var(--text); font-size: 15px; margin-left: 4px; }
+
 /* ---------- 관리자 ---------- */
 .order-tools { display: flex; align-items: center; justify-content: space-between; }
 .order-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }

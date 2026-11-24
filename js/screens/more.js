@@ -3,6 +3,7 @@ import { html, useApp, useState, Icon, Avatar, Sheet, Field, Toggle, useBusy } f
 import { DEFAULT_PREFS, buildIcs, download, shiftEnd, byStart, isIOS, isStandalone } from '../utils.js';
 import { pushState, enablePush, showLocal } from '../push.js';
 import { Generator, SlotsEditor, MembersAdmin, JoinCodeSheet, HistorySheet, BackupSheet } from './admin.js';
+import { InviteSheet, InstallCard } from '../install.js';
 
 const MenuRow = ({ icon, title, desc, onClick, right }) => html`<button class="menu-row" onClick=${onClick}>
   <${Icon} name=${icon} /><span><b>${title}</b>${desc && html`<small>${desc}</small>`}</span>${right ?? html`<${Icon} name="right" size=${18} cls="chev" />`}
@@ -57,6 +58,7 @@ export function More() {
 
     <h4 class="sub-title">앱</h4>
     <div class="card list">
+      <${MenuRow} icon="qr" title="부원 초대하기" desc=${me.isAdmin ? 'QR코드 · 링크 + 가입 코드 공유' : 'QR코드 · 앱 링크 공유'} onClick=${() => app.open(InviteSheet, {})} />
       <${MenuRow} icon="phoneapp" title="휴대폰에 앱 설치하기" desc=${isStandalone() ? '이미 앱으로 실행 중이에요' : '홈 화면에 아이콘 추가'} onClick=${() => app.open(InstallSheet, {})} />
       <${MenuRow} icon="history" title="일정 변경 기록" desc="누가 언제 순찰표를 바꿨는지" onClick=${() => app.open(HistorySheet, {})} />
       <${MenuRow} icon="cloud" title="데이터 저장 상태" desc=${store.mode === 'firebase' ? 'Firebase 클라우드에 실시간 저장 중' : '데모 모드 · 이 기기에만 저장 중'} onClick=${() => app.open(BackupSheet, {})} />
@@ -111,8 +113,7 @@ export function InstallSheet({ onClose }) {
   const app = useApp();
   const ios = isIOS();
   return html`<${Sheet} title="휴대폰에 앱 설치하기" onClose=${onClose}>
-    ${app.installPrompt && html`<button class="btn primary block" onClick=${async () => { app.installPrompt.prompt(); await app.installPrompt.userChoice; onClose(); }}>
-      <${Icon} name="download" size=${18} />지금 바로 설치</button>`}
+    <${InstallCard} />
     <div class="install-steps">
       <div class=${`install-card ${ios ? 'focus' : ''}`}>
         <h4>아이폰 (Safari)</h4>

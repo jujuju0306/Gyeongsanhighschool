@@ -1,13 +1,13 @@
 // 서비스 워커: 앱 오프라인 실행 + 푸시 알림 수신
 // 앱 파일을 고친 뒤 배포할 때는 아래 버전 숫자를 올려 주세요.
-const CACHE = 'patrol-v2';
+const CACHE = 'patrol-v3';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'firebase-config.js', 'css/style.css',
-  'js/app.js', 'js/ui.js', 'js/utils.js', 'js/actions.js', 'js/push.js', 'js/components.js',
+  'js/app.js', 'js/ui.js', 'js/utils.js', 'js/actions.js', 'js/push.js', 'js/components.js', 'js/install.js',
   'js/store/index.js', 'js/store/demo.js', 'js/store/firebase.js',
   'js/screens/home.js', 'js/screens/schedule.js', 'js/screens/swap.js', 'js/screens/contact.js',
   'js/screens/more.js', 'js/screens/admin.js',
-  'icons/icon.svg', 'icons/icon-192.png', 'icons/badge-96.png',
+  'icons/icon.svg', 'icons/icon-192.png', 'icons/badge-96.png', 'icons/qr-app.png',
 ];
 const CDN_HOSTS = ['unpkg.com', 'cdn.jsdelivr.net', 'www.gstatic.com'];
 

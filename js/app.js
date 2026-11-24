@@ -8,6 +8,7 @@ import { Schedule } from './screens/schedule.js';
 import { Swap } from './screens/swap.js';
 import { Contact, ChatRoom } from './screens/contact.js';
 import { More } from './screens/more.js';
+import { InstallCard, escapeInAppBrowser } from './install.js';
 
 const TABS = [
   { id: 'home', label: '홈', icon: 'home', C: Home },
@@ -66,6 +67,7 @@ function AuthScreen() {
       <h1>학생부 순찰</h1>
       <p>순찰 일정 확인 · 알림 · 대타 요청을 한 곳에서</p>
     </div>
+    <${InstallCard} />
     ${demo && html`<div class="demo-box">
       <b>데모 모드</b> — Firebase를 연결하기 전 미리보기예요. 아래 부원을 눌러 바로 들어가 보세요.
       <div class="demo-list">${store.demoAccounts().map((m) => html`<button key=${m.id} onClick=${() => store.signInAs(m.id)}>
@@ -279,6 +281,8 @@ function Root() {
 }
 
 // ---------------- 시작 ----------------
+escapeInAppBrowser(); // 카카오톡 안에서 열렸으면 기본 브라우저로 이동
+
 addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   window.__installPrompt = e;

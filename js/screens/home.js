@@ -5,6 +5,7 @@ import {
 } from '../utils.js';
 import { ShiftDetail, SwapRequestSheet } from '../components.js';
 import { pushState, enablePush } from '../push.js';
+import { InstallCard } from '../install.js';
 
 export function PushBanner() {
   const app = useApp();
@@ -65,6 +66,8 @@ export function Home() {
       <h2>${hello}, ${me.name}님</h2>
       <p>${fmtDate(today)}</p>
     </div>
+
+    <${InstallCard} dismissible />
 
     ${next
       ? html`<button class="feature" onClick=${() => app.open(ShiftDetail, { shiftId: next.id, initial: next })}>

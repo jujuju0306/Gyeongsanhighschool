@@ -15,5 +15,8 @@ self.FIREBASE_CONFIG = {
   appId: "1:1010124884924:web:63b9dac539514c1affb9b9",
 };
 
+// 앱 공개 주소 (초대 링크·QR코드에 사용)
+self.APP_PUBLIC_URL = "https://jujuju0306.github.io/Gyeongsanhighschool/";
+
 // 2) Firebase 콘솔 → 프로젝트 설정 → 클라우드 메시징 → 웹 구성 → "웹 푸시 인증서" 키 쌍 (BL... 로 시작하는 긴 문자열)
 self.FIREBASE_VAPID_KEY = "BBXEeghnbIeq61LO_1DEcmJSY4gLxmVppH36eNhM_0loCoHlgniIrrConmmOXxjBNHSyT0vp3IqpsvB371h9MFQ";
